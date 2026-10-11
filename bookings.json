@@ -48,8 +48,11 @@
     "time": "20:00",
     "duration": 2,
     "room_target": "chi_wah_study_rooms",
-    "status": "pending",
+    "status": "failed",
     "created_at": "2026-10-09T16:54:32+08:00",
-    "attempt_count": 0
+    "attempt_count": 1,
+    "last_attempt_at": "2026-10-12T03:43:43+08:00",
+    "last_error": "book.py exited with 1",
+    "updated_at": "2026-10-12T03:43:43+08:00"
   }
 ]
