@@ -42,7 +42,23 @@ There are two booking paths:
 - **Immediate booking:** if the selected date is today or tomorrow HKT, the manual workflow runs `book.py` directly.
 - **Future booking:** if the selected date is after tomorrow, the manual workflow adds a pending entry to `bookings.json`. The scheduled workflow starts before midnight HKT, waits locally until the booking window opens, and then books due entries.
 
-The schedule is intentionally set to `23:45 HKT` instead of exactly midnight. GitHub scheduled workflows can be delayed at the top of the hour, so the workflow starts earlier and lets Python wait until midnight before attempting the booking.
+The built-in schedule is set to `23:45 HKT`, but GitHub's scheduled workflows are best-effort and regularly start hours late (runs have been landing at 3-6 am HKT). The cron is kept only as a backup. For on-time bookings, set up an external trigger:
+
+### On-time trigger (recommended)
+
+1. Create a fine-grained token at `GitHub -> Settings -> Developer settings -> Fine-grained tokens`, limited to your fork, with **Contents: Read and write** permission.
+2. Create a free job at [cron-job.org](https://cron-job.org) (or any cron service):
+   - Schedule: every day at **23:50**, timezone **Asia/Hong_Kong**
+   - URL: `https://api.github.com/repos/<your-username>/<your-fork>/dispatches`
+   - Method: `POST`
+   - Headers:
+     - `Authorization: Bearer <your token>`
+     - `Accept: application/vnd.github+json`
+     - `Content-Type: application/json`
+   - Body: `{"event_type": "scheduled-booking"}`
+3. Use the service's "test run" button. GitHub should return `204` and start a run named `HKU Room Booker` straight away.
+
+The run waits until midnight HKT before booking. If the backup cron fires later, it finds the entries already processed and does nothing.
 
 ## Room Targets
 

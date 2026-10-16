@@ -1,7 +1,14 @@
 name: HKU Room Booker
 
 on:
-  # 23:45 HKT = 15:45 UTC. Python waits locally until midnight before booking.
+  # Primary trigger: an external cron (e.g. cron-job.org) POSTs a
+  # repository_dispatch event at ~23:50 HKT. GitHub's own schedule queue is
+  # best-effort and has been starting runs 2-6 hours late, so it is only a
+  # backup now. Python waits locally until midnight before booking.
+  repository_dispatch:
+    types: [scheduled-booking]
+
+  # Backup: 23:45 HKT = 15:45 UTC (often delayed by GitHub).
   schedule:
     - cron: '45 15 * * *'
 
@@ -38,6 +45,11 @@ on:
           - medical_single_study_rooms
           - music_discussion_rooms
 
+# Never run two bookers at once; a late backup run waits for the on-time one.
+concurrency:
+  group: hku-room-booker
+  cancel-in-progress: false
+
 jobs:
   book:
     runs-on: ubuntu-latest
@@ -47,6 +59,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          # Latest main, so a delayed run sees statuses committed by an earlier one.
+          ref: main
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -68,7 +83,7 @@ jobs:
       # Scheduled run: reads bookings.json for tomorrow's entries.
       - name: Book scheduled entries
         id: scheduled
-        if: github.event_name == 'schedule'
+        if: (github.event_name == 'schedule' || github.event_name == 'repository_dispatch')
         continue-on-error: true
         env:
           HKU_UID: ${{ secrets.HKU_UID }}
@@ -76,16 +91,17 @@ jobs:
         run: python run_scheduled.py
 
       - name: Commit updated bookings.json
-        if: always() && github.event_name == 'schedule'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'repository_dispatch')
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add bookings.json
           git diff --staged --quiet || git commit -m "chore: update booking status [skip ci]"
+          git pull --rebase
           git push
 
       - name: Fail scheduled run if due booking failed
-        if: github.event_name == 'schedule' && steps.scheduled.outcome == 'failure'
+        if: (github.event_name == 'schedule' || github.event_name == 'repository_dispatch') && steps.scheduled.outcome == 'failure'
         run: exit 1
 
       # Manual run: automatically books now for today/tomorrow, otherwise queues future.
