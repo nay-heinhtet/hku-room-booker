@@ -16,9 +16,9 @@ enabled = true
 [vars]
 TEMPLATE_OWNER = "rohanasrani3"
 TEMPLATE_REPO = "hku-room-booker"
-GITHUB_APP_SLUG = "REPLACE_WITH_APP_SLUG"
-GITHUB_APP_ID = "REPLACE_WITH_APP_ID"
-GITHUB_CLIENT_ID = "REPLACE_WITH_CLIENT_ID"
+GITHUB_APP_SLUG = "hku-room-booker"
+GITHUB_APP_ID = "5347730"
+GITHUB_CLIENT_ID = "Iv23liQqACu4GYpWd72i"
 
 # Secrets (set with `npx wrangler secret put NAME`, never commit them):
 #   GITHUB_CLIENT_SECRET    GitHub App client secret
