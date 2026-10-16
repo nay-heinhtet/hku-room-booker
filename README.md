@@ -10,7 +10,7 @@ No need to worry about your uid-password leaking out as long as you're storing i
 
 ### Easiest: use the website
 
-Go to **<SITE URL>**, sign in with GitHub, and follow the 4 steps on screen (about 5 minutes). After that you book rooms from a simple form, with no GitHub pages or settings to edit. Your HKU password is encrypted in your browser and stored only in your own private copy.
+Go to https://hku-room-booker.hku-room-booker.workers.dev/ , sign in with GitHub, and follow the 4 steps on screen (about 5 minutes). After that you book rooms from a simple form, with no GitHub pages or settings to edit. Your HKU password is encrypted in your browser and stored only in your own private copy.
 
 ### Advanced: fork and run it yourself
 
