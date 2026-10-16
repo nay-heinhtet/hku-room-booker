@@ -8,7 +8,13 @@ No need to worry about your uid-password leaking out as long as you're storing i
 
 ## Setup
 
-Executing the current model requires a GitHub Account. (Or, scroll down if you want to use locally)
+### Easiest: use the website
+
+Go to **<SITE URL>**, sign in with GitHub, and follow the 4 steps on screen (about 5 minutes). After that you book rooms from a simple form, with no GitHub pages or settings to edit. Your HKU password is encrypted in your browser and stored only in your own private copy.
+
+### Advanced: fork and run it yourself
+
+Requires a GitHub Account. (Or, scroll down if you want to use locally)
 
 1. Fork this repository.
 2. In your fork, go to `Settings -> Secrets and variables -> Actions`.
@@ -42,9 +48,11 @@ There are two booking paths:
 - **Immediate booking:** if the selected date is today or tomorrow HKT, the manual workflow runs `book.py` directly.
 - **Future booking:** if the selected date is after tomorrow, the manual workflow adds a pending entry to `bookings.json`. The scheduled workflow starts before midnight HKT, waits locally until the booking window opens, and then books due entries.
 
-The built-in schedule is set to `23:45 HKT`, but GitHub's scheduled workflows are best-effort and regularly start hours late (runs have been landing at 3-6 am HKT). The cron is kept only as a backup. For on-time bookings, set up an external trigger:
+The built-in schedule is set to `23:45 HKT`, but GitHub's scheduled workflows are best-effort and regularly start hours late (runs have been landing at 3-6 am HKT). The cron is kept only as a backup. Copies set up through the website get an on-time trigger automatically. If you forked the repo yourself, set up an external trigger:
 
-### On-time trigger (recommended)
+Every nightly run starts with a quick `due_check.py` job and only installs Chromium when a booking is due, so nights with nothing queued cost about a minute of Actions time.
+
+### On-time trigger for forks
 
 1. Create a fine-grained token at `GitHub -> Settings -> Developer settings -> Fine-grained tokens`, limited to your fork, with **Contents: Read and write** permission.
 2. Create a free job at [cron-job.org](https://cron-job.org) (or any cron service):
@@ -122,13 +130,15 @@ python3 run_scheduled.py
 |-- booker.py                    # Browser automation and result detection
 |-- bookings.json                # Future booking queue and status store
 |-- config.py                    # Settings and environment loading
+|-- due_check.py                 # Cheap nightly check: is anything due tonight?
 |-- data/
 |   |-- room_catalog.json        # Room targets, aliases, facility IDs
 |   `-- settings.json            # Runtime defaults
 |-- queue_booking.py             # Adds future bookings to bookings.json
 |-- room_catalog.py              # Loads and validates room catalogue data
 |-- run_manual.py                # Chooses immediate vs future booking
-`-- run_scheduled.py             # Runs due queued bookings
+|-- run_scheduled.py             # Runs due queued bookings
+`-- web/                         # Student website (Cloudflare Worker + GitHub App)
 ```
 
 ## PS

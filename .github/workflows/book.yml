@@ -1,10 +1,10 @@
 name: HKU Room Booker
 
 on:
-  # Primary trigger: an external cron (e.g. cron-job.org) POSTs a
-  # repository_dispatch event at ~23:50 HKT. GitHub's own schedule queue is
-  # best-effort and has been starting runs 2-6 hours late, so it is only a
-  # backup now. Python waits locally until midnight before booking.
+  # Primary trigger: the web app's nightly dispatcher (or any external cron,
+  # e.g. cron-job.org) sends a repository_dispatch at ~23:50 HKT. GitHub's own
+  # schedule queue is best-effort and has been starting runs 2-6 hours late,
+  # so it is only a backup. Python waits locally until midnight before booking.
   repository_dispatch:
     types: [scheduled-booking]
 
@@ -45,23 +45,43 @@ on:
           - medical_single_study_rooms
           - music_discussion_rooms
 
-# Never run two bookers at once; a late backup run waits for the on-time one.
-concurrency:
-  group: hku-room-booker
-  cancel-in-progress: false
-
 jobs:
+  # Nightly pre-check: finishes in seconds when nothing is due, so private
+  # copies don't spend Actions minutes installing Chromium every night.
+  check:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      due: ${{ steps.due.outputs.due }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Check for due bookings
+        id: due
+        run: python3 due_check.py >> "$GITHUB_OUTPUT"
+
   book:
+    needs: check
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.check.outputs.due == 'true') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write   # needed to commit bookings.json status updates
+    # Nightly runs never overlap: a late backup run waits for the on-time one,
+    # then finds the entries already processed. Manual runs never wait.
+    concurrency:
+      group: booker-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'nightly' }}
+      cancel-in-progress: false
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          # Latest main, so a delayed run sees statuses committed by an earlier one.
-          ref: main
+          # Branch tip rather than the trigger commit, so a delayed run sees
+          # statuses committed by an earlier one.
+          ref: ${{ github.ref_name }}
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -80,10 +100,10 @@ jobs:
       - name: Install Chromium
         run: playwright install chromium --with-deps
 
-      # Scheduled run: reads bookings.json for tomorrow's entries.
+      # Nightly run: books the queued entries whose booking window opens at midnight.
       - name: Book scheduled entries
         id: scheduled
-        if: (github.event_name == 'schedule' || github.event_name == 'repository_dispatch')
+        if: github.event_name != 'workflow_dispatch'
         continue-on-error: true
         env:
           HKU_UID: ${{ secrets.HKU_UID }}
@@ -91,7 +111,7 @@ jobs:
         run: python run_scheduled.py
 
       - name: Commit updated bookings.json
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'repository_dispatch')
+        if: always() && github.event_name != 'workflow_dispatch'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -101,7 +121,7 @@ jobs:
           git push
 
       - name: Fail scheduled run if due booking failed
-        if: (github.event_name == 'schedule' || github.event_name == 'repository_dispatch') && steps.scheduled.outcome == 'failure'
+        if: github.event_name != 'workflow_dispatch' && steps.scheduled.outcome == 'failure'
         run: exit 1
 
       # Manual run: automatically books now for today/tomorrow, otherwise queues future.
@@ -110,15 +130,12 @@ jobs:
         env:
           HKU_UID: ${{ secrets.HKU_UID }}
           HKU_PIN: ${{ secrets.HKU_PIN }}
+          INPUT_DATE: ${{ inputs.date }}
+          INPUT_TIME: ${{ inputs.time }}
+          INPUT_DURATION: ${{ inputs.duration }}
+          INPUT_ROOM_TARGET: ${{ inputs.room_target }}
         run: |
-          args=(
-            python run_manual.py
-            --date "${{ inputs.date }}"
-            --time "${{ inputs.time }}"
-            --duration "${{ inputs.duration }}"
-            --room-target "${{ inputs.room_target }}"
-          )
-          "${args[@]}"
+          python run_manual.py             --date "$INPUT_DATE"             --time "$INPUT_TIME"             --duration "$INPUT_DURATION"             --room-target "$INPUT_ROOM_TARGET"
 
       - name: Commit queued future booking
         if: github.event_name == 'workflow_dispatch'
@@ -127,6 +144,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add bookings.json
           git diff --staged --quiet || git commit -m "chore: queue room booking [skip ci]"
+          git pull --rebase
           git push
 
       # Upload logs as an artifact visible in the Actions UI.

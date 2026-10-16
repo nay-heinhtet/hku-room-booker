@@ -1,0 +1,20 @@
+{
+  "name": "hku-room-booker-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild client/app.js --bundle --minify --format=iife --target=es2020 --outfile=public/app.js",
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "libsodium-wrappers": "^0.8.4",
+    "wrangler": "^4.151.1"
+  },
+  "dependencies": {
+    "blakejs": "^1.2.1",
+    "tweetnacl": "^1.0.3"
+  }
+}

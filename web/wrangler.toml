@@ -1,0 +1,27 @@
+name = "hku-room-booker"
+main = "src/worker.js"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# 23:50 HKT (UTC+8, no DST). Cloudflare cron triggers run in UTC.
+[triggers]
+crons = ["50 15 * * *"]
+
+[observability]
+enabled = true
+
+[vars]
+TEMPLATE_OWNER = "rohanasrani3"
+TEMPLATE_REPO = "hku-room-booker"
+GITHUB_APP_SLUG = "REPLACE_WITH_APP_SLUG"
+GITHUB_APP_ID = "REPLACE_WITH_APP_ID"
+GITHUB_CLIENT_ID = "REPLACE_WITH_CLIENT_ID"
+
+# Secrets (set with `npx wrangler secret put NAME`, never commit them):
+#   GITHUB_CLIENT_SECRET    GitHub App client secret
+#   GITHUB_APP_PRIVATE_KEY  GitHub App private key (.pem contents)
+#   SESSION_SECRET          random string, 32+ characters
+#   ADMIN_TOKEN             optional; enables POST /admin/dispatch for testing
