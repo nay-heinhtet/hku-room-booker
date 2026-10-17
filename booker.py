@@ -366,7 +366,13 @@ async def _try_book_facility(
         candidate.facility_name,
         candidate.facility_id,
     )
-    await page.goto(booking_url, wait_until="domcontentloaded", timeout=20_000)
+    # The booking server occasionally stalls on one page load; retry once so a
+    # free room isn't skipped because of a single slow response.
+    try:
+        await page.goto(booking_url, wait_until="domcontentloaded", timeout=20_000)
+    except PWTimeout:
+        log.warning(f"  Facility {candidate.facility_id}: booking form was slow to load; retrying once")
+        await page.goto(booking_url, wait_until="domcontentloaded", timeout=30_000)
 
     # Bail out if we were redirected off the booking form
     if "NewBooking.aspx" not in page.url:
