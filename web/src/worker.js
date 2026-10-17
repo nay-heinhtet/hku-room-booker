@@ -396,8 +396,19 @@ async function handle(request, env) {
   return ctx.finish(response);
 }
 
+const REQUIRED_SETTINGS = ["GITHUB_APP_ID", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "GITHUB_APP_PRIVATE_KEY", "SESSION_SECRET"];
+
+function missingSettings(env) {
+  return REQUIRED_SETTINGS.filter((k) => !env[k] || String(env[k]).startsWith("REPLACE_WITH_"));
+}
+
 export default {
   async fetch(request, env) {
+    const missing = missingSettings(env);
+    if (missing.length && /^\/(api|auth|admin)\//.test(new URL(request.url).pathname)) {
+      console.error("Missing Worker settings:", missing.join(", "));
+      return json({ error: `The site isn't fully set up yet (missing: ${missing.join(", ")}). See web/README.md, step 4.` }, 503);
+    }
     try {
       return await handle(request, env);
     } catch (err) {
@@ -407,6 +418,11 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
+    const missing = missingSettings(env);
+    if (missing.length) {
+      console.error("Nightly dispatch skipped; missing Worker settings:", missing.join(", "));
+      return;
+    }
     ctx.waitUntil(dispatchAll(env));
   },
 };

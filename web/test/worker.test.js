@@ -243,3 +243,12 @@ test("expired session without refresh token signs out cleanly", async (t) => {
   assert.deepEqual(await res.json(), { signedIn: false });
   assert.match(res.headers.get("Set-Cookie"), /booker_session=;.*Max-Age=0/);
 });
+
+test("missing secrets give a clear setup error instead of a crash", async () => {
+  const { GITHUB_CLIENT_SECRET, SESSION_SECRET, ...partial } = env;
+  const res = await worker.fetch(new Request(ORIGIN + "/auth/callback?code=c&state=s"), partial);
+  assert.equal(res.status, 503);
+  assert.match((await res.json()).error, /missing: GITHUB_CLIENT_SECRET, SESSION_SECRET/);
+  // Static pages still load.
+  assert.equal(await (await worker.fetch(new Request(ORIGIN + "/"), partial)).text(), "asset");
+});
