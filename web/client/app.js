@@ -420,6 +420,7 @@ const STAMPS = {
   failed: ["Failed", "bad"],
   unavailable: ["No room", "bad"],
   invalid: ["Invalid", "bad"],
+  login_failed: ["Login failed", "bad"],
   expired: ["Missed", "muted"],
   cancelled: ["Cancelled", "muted"],
 };

@@ -114,6 +114,10 @@ def main() -> None:
         if result.returncode == 0:
             entry["status"] = "booked"
             entry.pop("last_error", None)
+        elif result.returncode == 3:
+            entry["status"] = "login_failed"
+            entry["last_error"] = "HKU rejected the saved UID/PIN."
+            any_failed = True
         elif result.returncode == 2:
             entry["status"] = "unavailable"
             entry["last_error"] = "No matching room could be booked for this date/time."

@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 from playwright.async_api import async_playwright, Page, TimeoutError as PWTimeout
 
-from auth import login
+from auth import LoginRejected, login
 from config import BOOKING_SECURE_BASE_URL, DEFAULT_BOOKING_PURPOSE
 from room_catalog import (
     BOOKING_TARGETS,
@@ -51,6 +51,7 @@ class FacilityAttemptResult:
 RETRYABLE_ERROR = "retryable_error"
 UNAVAILABLE = "unavailable"
 TERMINAL_REJECTED = "terminal_rejected"
+LOGIN_FAILED = "login_failed"
 
 
 # ── Session helpers ───────────────────────────────────────────────────────────
@@ -461,7 +462,11 @@ async def book_room(
         ctx     = await browser.new_context()
         page    = await ctx.new_page()
         try:
-            await login(page)
+            try:
+                await login(page)
+            except LoginRejected as exc:
+                log.error("Login failed: %s", exc)
+                return BookingResult(LOGIN_FAILED, str(exc))
             if await _matching_booking_record_exists(page, target_date, sessions):
                 log.info("DONE — matching booking already exists.")
                 return BookingResult("booked", "Matching booking already exists.")

@@ -28,7 +28,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from config import DEFAULT_ROOM_TARGET, HEADLESS, LOG_FILE, HKT_TIMEZONE
-from booker import book_room
+from booker import LOGIN_FAILED, book_room
 from room_catalog import normalize_target
 
 HKT = ZoneInfo(HKT_TIMEZONE)
@@ -136,6 +136,9 @@ async def main() -> None:
         if result.success:
             log.info(f"DONE — {target_date} {args.start_time} ({duration_hours}h, {args.room_target})")
             sys.exit(0)
+        if result.status == LOGIN_FAILED:
+            log.error("STOPPED — %s", result.reason)
+            sys.exit(3)
         if not result.retryable:
             log.error("STOPPED — %s", result.reason)
             sys.exit(2)
