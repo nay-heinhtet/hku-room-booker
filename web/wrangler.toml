@@ -1,4 +1,5 @@
-name = "hku-room-booker"
+# The Worker name is the first part of the URL: <name>.<account subdomain>.workers.dev
+name = "rohanasrani3"
 main = "src/worker.js"
 compatibility_date = "2026-09-01"
 

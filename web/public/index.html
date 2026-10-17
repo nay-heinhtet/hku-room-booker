@@ -3,23 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#121a2c">
   <title>HKU Room Booker</title>
-  <meta name="description" content="Book HKU library study rooms automatically the moment the booking window opens at midnight.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+  <meta name="description" content="Queue an HKU library study room and it gets booked the moment the booking window opens at midnight.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23121a2c'/><path d='M20.5 7a9 9 0 1 0 4.5 16.8A10 10 0 0 1 20.5 7z' fill='%23f3b544'/></svg>">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <header class="top">
     <div class="wrap top-inner">
-      <a class="brand" href="/">📚 HKU Room Booker</a>
+      <a class="brand" href="/">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M20.5 7a9 9 0 1 0 4.5 16.8A10 10 0 0 1 20.5 7z"/></svg>
+        <span>Room Booker</span>
+      </a>
       <div id="account"></div>
     </div>
   </header>
+  <section id="band" aria-live="polite"></section>
   <main class="wrap" id="app">
-    <p class="muted">Loading…</p>
+    <p class="muted loading">Loading…</p>
   </main>
   <footer class="wrap foot">
-    <p>Independent student project, not affiliated with HKU. Please attend the rooms you book, or cancel them on the library site.</p>
+    <p>Independent student project, not affiliated with HKU. Please turn up to the rooms you book, or release them on the library site so someone else can use them.</p>
   </footer>
   <script src="/app.js"></script>
 </body>
